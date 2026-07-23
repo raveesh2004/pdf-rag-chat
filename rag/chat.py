@@ -1,14 +1,17 @@
-"""Generation: answer questions grounded in retrieved chunks, with page citations."""
+"""Generation: answer questions grounded in retrieved chunks, with page citations.
+
+Uses Llama 3.3 70B via Groq's free tier — no paid API key needed.
+"""
 
 import os
 
-import anthropic
 from dotenv import load_dotenv
+from groq import Groq
 
 load_dotenv()
 
-MODEL = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
-client = anthropic.Anthropic()
+MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+client = Groq()
 
 SYSTEM_PROMPT = (
     "You are a document Q&A assistant. Answer using ONLY the provided document "
@@ -31,15 +34,19 @@ def answer_question(question: str, chunks: list[dict], history: list[dict]):
         f"Document excerpts:\n\n{context}\n\n---\n\nQuestion: {question}"
     )
 
-    messages = [
-        {"role": m["role"], "content": m["content"]} for m in history
-    ] + [{"role": "user", "content": user_message}]
+    messages = (
+        [{"role": "system", "content": SYSTEM_PROMPT}]
+        + [{"role": m["role"], "content": m["content"]} for m in history]
+        + [{"role": "user", "content": user_message}]
+    )
 
-    with client.messages.stream(
+    stream = client.chat.completions.create(
         model=MODEL,
-        max_tokens=16000,
-        thinking={"type": "adaptive"},
-        system=SYSTEM_PROMPT,
+        max_tokens=4000,
+        stream=True,
         messages=messages,
-    ) as stream:
-        yield from stream.text_stream
+    )
+    for chunk in stream:
+        delta = chunk.choices[0].delta.content
+        if delta:
+            yield delta

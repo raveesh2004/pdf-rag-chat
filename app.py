@@ -24,7 +24,7 @@ with st.sidebar:
         "2. Chunk with overlap\n"
         "3. Embed → ChromaDB (MiniLM)\n"
         "4. Retrieve top-k per question\n"
-        "5. Claude answers with [p. N] citations"
+        "5. Llama 3.3 answers with [p. N] citations"
     )
 
 if uploaded is None:
